@@ -1,0 +1,42 @@
+name: Update Clash Dashboard
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  Update:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone Repository
+      uses: actions/checkout@main
+
+    - name: Release and upload `Dashboard` assets
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: Clash-Premium
+        tag: Clash-Premium
+        overwrite: true
+        body: "Clash Premium Release 版和 Nightly 版内核（已停更）"
+        file_glob: true
+        file: ./Clash-Premium/*
+
+    - name: Commit and push `Dashboard` branch
+      run: |
+        cd ./Clash-Premium/ || exit 1
+        git init
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -b Clash-Premium
+        git add ./Clash-Premium/clashpremium-release* && git commit -m "更新 Clash Premium 内核 Release 版至 v2023.08.17（已停更）"
+        git add ./Clash-Premium/clashpremium-nightly* && git commit -m "更新 Clash Premium 内核 Nightly 版至 v2023-09-05-gdcc8d87（已停更）"
+        git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+        git push -f -u origin Clash-Premium
+
+    - name: Purge jsDelivr CDN
+      run: |
+        cd ./Clash-Premium/ || exit 1
+        for file in $(ls); do
+          curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@Clash-Premium/${file}"
+        done
